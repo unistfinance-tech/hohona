@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>구영리 음식점</title>
+    <link rel="preconnect" href="https://unpkg.com" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <link rel="stylesheet" href="./styles.css?v=20260714-170114-privacy" />
+  </head>
+  <body>
+    <section id="gateScreen" class="gate-screen" aria-label="지역맛집 선택">
+      <div id="gateMap" class="gate-map" aria-hidden="true"></div>
+      <header class="gate-title">
+        <h1>인근 맛집 리스트</h1>
+      </header>
+      <div class="gate-panel">
+        <h1>지역선택</h1>
+        <div class="gate-actions">
+          <button type="button" data-gate-region="guyeong"><strong>구영리</strong></button>
+          <button type="button" data-gate-region="cheonsang"><strong>천상리</strong></button>
+          <button type="button" data-gate-region="gulhwa"><strong>굴화리</strong></button>
+          <button type="button" data-gate-region="eonyang"><strong>언양·삼남</strong></button>
+          <button type="button" data-gate-region="mugeo"><strong>무거동</strong></button>
+          <button type="button" data-gate-mode="bento"><strong>도시락<small>(업데이트 필요)</small></strong></button>
+        </div>
+        <div class="gate-utility-actions" aria-label="부가 메뉴">
+          <button id="inquiryBtn" type="button">
+            <span data-lucide="message-circle" aria-hidden="true"></span>
+            <strong>문의</strong>
+          </button>
+          <button id="rankingBtn" type="button">
+            <span data-lucide="chart-no-axes-column" aria-hidden="true"></span>
+            <strong>랭킹</strong>
+          </button>
+        </div>
+      </div>
+      <aside id="rankingPanel" class="gate-overlay-panel gate-ranking-panel" role="dialog" aria-modal="true" aria-labelledby="rankingTitle" hidden>
+        <div class="gate-overlay-header">
+          <div>
+            <span class="gate-overlay-kicker">5개 지역 통합</span>
+            <h2 id="rankingTitle">지역 랭킹</h2>
+          </div>
+          <button id="closeRanking" class="gate-overlay-close" type="button" aria-label="랭킹 닫기" title="닫기">
+            <span data-lucide="x" aria-hidden="true"></span>
+          </button>
+        </div>
+        <div class="ranking-column-header" aria-hidden="true">
+          <span>순위</span>
+          <span>업체</span>
+          <span>추세</span>
+        </div>
+        <ol id="rankingList" class="ranking-list" aria-live="polite"></ol>
+      </aside>
+      <aside id="inquiryPanel" class="gate-overlay-panel gate-inquiry-panel" role="dialog" aria-modal="true" aria-labelledby="inquiryTitle" hidden>
+        <div class="gate-overlay-header">
+          <div>
+            <span class="gate-overlay-kicker">문의 및 오류</span>
+            <h2 id="inquiryTitle">문의하기</h2>
+          </div>
+          <button id="closeInquiry" class="gate-overlay-close" type="button" aria-label="문의 닫기" title="닫기">
+            <span data-lucide="x" aria-hidden="true"></span>
+          </button>
+        </div>
+        <form id="inquiryForm" class="inquiry-form">
+          <label class="inquiry-field">
+            <span>문의 유형</span>
+            <select id="inquiryType" name="type" required>
+              <option value="">선택</option>
+              <option value="오류 신고">오류 신고</option>
+              <option value="음식점 정보 수정">음식점 정보 수정</option>
+              <option value="기능 문의">기능 문의</option>
+              <option value="기타">기타</option>
+            </select>
+          </label>
+          <label class="inquiry-field">
+            <span>관련 지역</span>
+            <select id="inquiryRegion" name="region"></select>
+          </label>
+          <label class="inquiry-field">
+            <span>회신 이메일</span>
+            <input id="inquiryReplyEmail" name="replyEmail" type="email" inputmode="email" autocomplete="email" placeholder="name@example.com" required />
+          </label>
+          <label class="inquiry-field">
+            <span>문의 내용</span>
+            <textarea id="inquiryMessage" name="message" rows="6" maxlength="1000" placeholder="업데이트 중" required></textarea>
+          </label>
+          <div class="inquiry-form-footer">
+            <span id="inquiryStatus" class="inquiry-status" role="status" aria-live="polite"></span>
+            <button class="inquiry-submit-button" type="submit">
+              <span data-lucide="send" aria-hidden="true"></span>
+              <strong>보내기</strong>
+            </button>
+          </div>
+        </form>
+      </aside>
+      <footer class="gate-footer" aria-label="서비스 정보">
+        <span>제작: KMU</span>
+        <span>업데이트: 2026.07.14.</span>
+        <span>버전정보: 1.0</span>
+      </footer>
+    </section>
+
+    <main class="app-shell">
+      <section class="map-pane" aria-label="구영리 맛집 지도">
+        <div id="map"></div>
+        <div class="map-topbar">
+          <div class="map-heading">
+            <h1 id="appTitle">구영리</h1>
+            <span id="mapCount" class="map-count">00곳</span>
+          </div>
+          <div class="map-actions">
+            <button id="noticeBtn" class="notice-button" type="button" aria-label="유의사항 보기">유의사항</button>
+          </div>
+        </div>
+        <div id="noticePopover" class="notice-popover" hidden>
+          <ol>
+            <li>이용점수는 카테고리별 이용횟수 등을 고려하여 반영합니다(65~95점).</li>
+            <li>방문순: 누적 방문 중심</li>
+            <li>추세순: 최근 6개월 반영</li>
+            <li>신규진입: 최근 6개월 관심 반영</li>
+            <li>문의 및 오류: 메인하단 이용</li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="control-pane" aria-label="맛집 검색과 비교">
+        <div class="search-row">
+          <label class="search-box">
+            <span data-lucide="search"></span>
+            <input id="searchInput" type="search" placeholder="식당, 메뉴, 주소 검색" autocomplete="off" />
+          </label>
+          <label class="sort-select-box">
+            <select id="sortSelect" aria-label="정렬 기준">
+              <option value="visits">방문순</option>
+              <option value="distance">거리순</option>
+              <option value="trend">추세순</option>
+              <option value="newEntry">신규진입</option>
+            </select>
+          </label>
+          <button id="compareToggle" class="icon-button" type="button" aria-label="비교함 보기" title="비교함">
+            <span data-lucide="columns-3"></span>
+            <span class="compare-label">비교함</span>
+            <strong id="compareCount">0</strong>
+          </button>
+        </div>
+
+        <div class="filters" aria-label="필터">
+          <div id="categoryFilters" class="filter-group" role="group" aria-label="음식 종류"></div>
+        </div>
+
+        <div id="restaurantList" class="restaurant-list" aria-live="polite"></div>
+
+        <aside id="comparePanel" class="compare-panel" aria-label="비교함">
+          <div class="panel-header">
+            <h2>비교함</h2>
+            <div class="panel-actions">
+              <button id="clearCompare" class="clear-compare-button" type="button" disabled>
+                <span data-lucide="trash-2"></span>
+                <span>비교함 비우기</span>
+              </button>
+              <button id="closeCompare" class="icon-button" type="button" aria-label="비교함 닫기" title="닫기">
+                <span data-lucide="x"></span>
+              </button>
+            </div>
+          </div>
+          <div id="compareTable" class="compare-table"></div>
+        </aside>
+        <div id="compareLimitNotice" class="compare-limit-notice" role="alert" aria-live="assertive" hidden>
+          최대 4개까지 비교할 수 있습니다.
+        </div>
+
+        <aside id="trendPanel" class="trend-panel" aria-label="월별 이용 추세">
+          <div class="panel-header">
+            <h2 id="trendTitle">월별 이용 추세</h2>
+            <button id="closeTrend" class="icon-button" type="button" aria-label="월별 추세 닫기" title="닫기">
+              <span data-lucide="x"></span>
+            </button>
+          </div>
+          <div id="trendChart" class="trend-chart"></div>
+          <div id="trendSummary" class="trend-summary"></div>
+        </aside>
+      </section>
+    </main>
+
+    <nav class="bottom-main-nav" aria-label="메인 이동">
+      <button id="backNavBtn" class="nav-secondary" type="button">‹ 이전</button>
+      <button id="homeNavBtn" class="nav-home" type="button">⌂ 홈</button>
+      <button id="forwardNavBtn" class="nav-secondary" type="button">다음 ›</button>
+      <button id="mainNavBtn" class="nav-main" type="button">⌂ 메인</button>
+    </nav>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+    <script src="./app-config.js?v=20260714-170114-privacy"></script>
+    <script>
+      (() => {
+        const configuredRegions = new Set((window.APP_CONFIG?.regions || []).map((region) => region.id));
+        const requestedRegion = new URLSearchParams(window.location.search).get("region");
+        const regionId = configuredRegions.has(requestedRegion) ? requestedRegion : window.APP_CONFIG.activeRegionId;
+        const suffix = regionId === "guyeong" ? "" : `-${regionId}`;
+        document.write(`<script src="./restaurant-catalog${suffix}.js?v=20260714-170114-privacy"><\/script>`);
+      })();
+    </script>
+    <script src="./bento-restaurants.js?v=20260714-170114-privacy"></script>
+    <script src="./external-details.js?v=20260714-170114-privacy"></script>
+    <script src="./restaurant-ranking.js?v=20260714-170114-privacy"></script>
+    <script src="./app.js?v=20260714-170114-privacy"></script>
+  </body>
+</html>

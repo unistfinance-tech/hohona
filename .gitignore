@@ -1,0 +1,23 @@
+__pycache__/
+*.pyc
+_site/
+/public-restaurants.js
+/usage-data.js
+
+# Private workbooks must never be committed, regardless of their location.
+*.xlsx
+*.xls
+*.xlsm
+*.xlsb
+*.ods
+data/*.csv
+data/*.bin
+data/*.js
+data/**/*.js
+data/**/*.csv
+data/**/*.json
+data/**/*.jsonl
+
+# Private source inputs are local-only. Keep only the usage guide in Git.
+input/*
+!input/README.md
